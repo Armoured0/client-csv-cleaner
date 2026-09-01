@@ -1,0 +1,17 @@
+" Amount "," Transaction -- ID ",Category," DATE ",Description
+12," abc-001 "," Office Supplies ",2026-08-29," Printer paper "
+12.3,ABC_002," Travel ",29/08/2026,"Train, London"
+001.20,ref-003,Meals   And Entertainment,29/02/2024,Client   lunch
+5.00,"   ",office,2026-08-29,Blank identifier
+3.25,BADDATE-001,office,2025-02-29,Impossible date
+4.10,BADDESC-001,office,2026-08-29,"   "
+0.00,BADAMOUNT-001,office,2026-08-29,Zero amount
+
+8.00,BADCAT-001,"   ",2026-08-29,Blank category
+9.99,abc-001,office,2026-08-29,Duplicate accepted ID
+6.00,early-001,office,31/02/2026,Invalid occurrence
+20.50,EARLY-001,Consulting,2026-08-30,Valid later occurrence
+2.00,BAD ID,office,not-a-date,Multiple problems
+1.001,BADAMOUNT-002,office,2026-08-29,Too many decimal places
+7.5,MULTI-001,Consulting,2026-08-20,"Two-line
+description"

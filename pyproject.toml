@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "business-data-cleaner"
+version = "1.0.0"
+requires-python = ">= 3.12"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
