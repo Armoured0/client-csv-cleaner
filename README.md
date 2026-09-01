@@ -245,7 +245,7 @@ Accepted money is represented as integer pence throughout reporting. No accepted
 
 ## Limitations
 
-Version 0.1.0 deliberately supports a narrow contract:
+Version 1.0.0 deliberately supports a narrow contract:
 
 - one input file per command;
 - comma-delimited UTF-8 CSV only;
