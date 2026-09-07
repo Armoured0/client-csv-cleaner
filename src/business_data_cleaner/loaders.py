@@ -1,7 +1,7 @@
 import csv
 import re
-from pathlib import Path
 from collections.abc import Sequence
+from pathlib import Path
 
 
 def normalise_fieldnames(fieldnames: Sequence[str]) -> list[str]:

@@ -18,7 +18,7 @@ def main(arguments: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
     cli_input_path = args.input_path
     cli_output_dir_path = args.output_dir
-    
+
     input_path = Path(cli_input_path)
     output_dir = Path(cli_output_dir_path)
 
@@ -30,19 +30,28 @@ def main(arguments: list[str] | None = None) -> int:
 
     try:
         if input_path.is_symlink():
-            print(f"Input path is unsupported, is a symlink: {cli_input_path}", file=sys.stderr)
+            print(
+                f"Input path is unsupported, is a symlink: {cli_input_path}",
+                file=sys.stderr,
+            )
             return 1
         elif output_dir.is_symlink():
-            print(f"Output path is unsupported, is a symlink: {cli_output_dir_path}", file=sys.stderr)
+            print(
+                f"Output path is unsupported, is a symlink: {cli_output_dir_path}",
+                file=sys.stderr,
+            )
             return 1
-        
+
         for path in output_paths:
             if path.is_symlink():
-                print(f"Existing file in output dir is unsupported symlink: {str(path)}", file=sys.stderr)
+                print(
+                    f"Existing file in output dir is unsupported symlink: {path!s}",
+                    file=sys.stderr,
+                )
                 return 1
-        
+
         resolved_output_paths = set()
-        
+
         for path in output_paths:
             resolved_output_paths.add(path.resolve())
 
@@ -64,9 +73,7 @@ def main(arguments: list[str] | None = None) -> int:
     )
 
     try:
-        summary = write_reports(
-            output_dir, clean_transactions, rejected_transactions
-        )
+        summary = write_reports(output_dir, clean_transactions, rejected_transactions)
     except OSError as error:
         print(
             f"Could not write to directory {args.output_dir}: {error}", file=sys.stderr

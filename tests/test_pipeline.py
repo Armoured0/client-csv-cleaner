@@ -1,6 +1,6 @@
-import pytest
-
 from pathlib import Path
+
+import pytest
 
 from business_data_cleaner.cli import main
 
@@ -173,7 +173,7 @@ def test_decoding_failure(tmp_path, capsys):
     }
 
     test_output_dir_path.mkdir(parents=True, exist_ok=True)
-    
+
     for file_path in existing_output_paths:
         file_path.write_text("existing file", encoding="utf-8")
 
@@ -277,19 +277,20 @@ def test_path_verification_failure(tmp_path, capsys, monkeypatch):
     with monkeypatch.context() as patch:
         patch.setattr(Path, "resolve", fail_resolution)
 
-        result = main([
-            str(input_path),
-            "--output-dir",
-            str(output_dir),
-        ])
+        result = main(
+            [
+                str(input_path),
+                "--output-dir",
+                str(output_dir),
+            ]
+        )
 
     captured = capsys.readouterr()
 
     assert result == 1
     assert captured.out == ""
     assert captured.err == (
-        "Could not verify input/output dir paths: "
-        "Deliberate test failure\n"
+        "Could not verify input/output dir paths: Deliberate test failure\n"
     )
     assert not output_dir.exists()
     assert input_path.read_text(encoding="utf-8") == original_input
