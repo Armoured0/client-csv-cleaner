@@ -84,7 +84,7 @@ Header normalisation:
 
 For example, ` Transaction ID ` and `transaction-id` both become `transaction_id`. Missing, extra, blank or colliding headers make the complete file unusable.
 
-Normal CSV quoting is supported, including commas and line breaks inside quoted fields. Every data record must contain exactly five fields. Malformed CSV or a structurally short or long record makes the complete file unusable because its field mapping cannot be trusted. Blank physical lines are ignored.
+Normal CSV quoting is supported, including commas and line breaks inside quoted fields. Every data record must contain exactly five fields. Malformed CSV or a structurally short or long record makes the complete file unusable because its field mapping cannot be trusted. Blank physical lines between records are ignored. Leading blank lines before the header are not supported.
 
 A completely empty file is invalid. A header-only file is valid and produces two header-only CSV files plus a zero-valued summary.
 

@@ -1,9 +1,10 @@
 import csv
 import re
 from pathlib import Path
+from collections.abc import Sequence
 
 
-def normalise_fieldnames(fieldnames: list[str]) -> list[str]:
+def normalise_fieldnames(fieldnames: Sequence[str]) -> list[str]:
     normalised_headers = []
 
     for header in fieldnames:
@@ -31,7 +32,7 @@ def validate_headers(normalised_headers: list[str]) -> None:
 
 
 def validate_rows_structure(
-    transaction_records: list[dict[str | None, str | None]],
+    transaction_records: list[dict[str | None, str | None | list[str]]],
 ) -> None:
     """Raise csv.Error if any transaction record has missing or extra fields."""
     for record in transaction_records:

@@ -18,22 +18,43 @@ def main(arguments: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
     cli_input_path = args.input_path
     cli_output_dir_path = args.output_dir
-
-    input_path_resolved = Path(cli_input_path).resolve()
-    output_dir_resolved = Path(cli_output_dir_path).resolve()
+    
+    input_path = Path(cli_input_path)
+    output_dir = Path(cli_output_dir_path)
 
     output_paths = {
-        (output_dir_resolved / "clean_transactions.csv").resolve(),
-        (output_dir_resolved / "rejected_rows.csv").resolve(),
-        (output_dir_resolved / "summary.json").resolve(),
+        (output_dir / "clean_transactions.csv"),
+        (output_dir / "rejected_rows.csv"),
+        (output_dir / "summary.json"),
     }
 
-    if input_path_resolved in output_paths:
-        print(f"Input and output path collide: {args.input_path}", file=sys.stderr)
+    try:
+        if input_path.is_symlink():
+            print(f"Input path is unsupported, is a symlink: {cli_input_path}", file=sys.stderr)
+            return 1
+        elif output_dir.is_symlink():
+            print(f"Output path is unsupported, is a symlink: {cli_output_dir_path}", file=sys.stderr)
+            return 1
+        
+        for path in output_paths:
+            if path.is_symlink():
+                print(f"Existing file in output dir is unsupported symlink: {str(path)}", file=sys.stderr)
+                return 1
+        
+        resolved_output_paths = set()
+        
+        for path in output_paths:
+            resolved_output_paths.add(path.resolve())
+
+        if input_path.resolve() in resolved_output_paths:
+            print(f"Input and output path collide: {args.input_path}", file=sys.stderr)
+            return 1
+    except (OSError, RuntimeError) as error:
+        print(f"Could not verify input/output dir paths: {error}", file=sys.stderr)
         return 1
 
     try:
-        transaction_records = load_transactions(input_path_resolved)
+        transaction_records = load_transactions(input_path)
     except (OSError, UnicodeError, csv.Error) as error:
         print(f"Could not process file {args.input_path}: {error}", file=sys.stderr)
         return 1
@@ -44,7 +65,7 @@ def main(arguments: list[str] | None = None) -> int:
 
     try:
         summary = write_reports(
-            output_dir_resolved, clean_transactions, rejected_transactions
+            output_dir, clean_transactions, rejected_transactions
         )
     except OSError as error:
         print(

@@ -1,5 +1,7 @@
 import pytest
 
+from pathlib import Path
+
 from business_data_cleaner.cli import main
 
 
@@ -164,10 +166,16 @@ def test_missing_input(tmp_path, capsys):
 def test_decoding_failure(tmp_path, capsys):
     test_input_file_path = tmp_path / "invalid.csv"
     test_output_dir_path = tmp_path / "output"
-    existing_output_path = test_output_dir_path / "summary.json"
+    existing_output_paths = {
+        test_output_dir_path / "summary.json",
+        test_output_dir_path / "clean_transactions.csv",
+        test_output_dir_path / "rejected_rows.csv",
+    }
 
     test_output_dir_path.mkdir(parents=True, exist_ok=True)
-    existing_output_path.write_text("existing file", encoding="utf-8")
+    
+    for file_path in existing_output_paths:
+        file_path.write_text("existing file", encoding="utf-8")
 
     test_input_file_path.write_bytes(
         b"transaction_id,date,description,amount,category\n"
@@ -187,20 +195,27 @@ def test_decoding_failure(tmp_path, capsys):
     )
     assert captured.out == ""
 
-    assert existing_output_path.read_text(encoding="utf-8") == "existing file"
+    for existing_file in existing_output_paths:
+        assert existing_file.read_text(encoding="utf-8") == "existing file"
 
 
 def test_csv_structure_failure(tmp_path, capsys):
     test_input_file_path = tmp_path / "invalid_structure.csv"
     test_output_dir_path = tmp_path / "output"
-    existing_output_path = test_output_dir_path / "summary.json"
+    existing_output_paths = {
+        test_output_dir_path / "summary.json",
+        test_output_dir_path / "clean_transactions.csv",
+        test_output_dir_path / "rejected_rows.csv",
+    }
 
     test_output_dir_path.mkdir(parents=True, exist_ok=True)
-    existing_output_path.write_text("existing file", encoding="utf-8")
+    for file_path in existing_output_paths:
+        file_path.write_text("existing file", encoding="utf-8")
 
     malformed_csv = (
         "transaction_id,date,description,amount,category\n"
-        "TXN-001,2026-08-01,Office supplies,12.50\n"
+        "TXN-001,2026-08-01,Office supplies,12.50,test\n"
+        "TXN-002,2024-07-22,Calculators,30.00\n"
     )
 
     test_input_file_path.write_text(malformed_csv, encoding="utf-8")
@@ -217,7 +232,8 @@ def test_csv_structure_failure(tmp_path, capsys):
     )
     assert captured.out == ""
 
-    assert existing_output_path.read_text(encoding="utf-8") == "existing file"
+    for existing_file in existing_output_paths:
+        assert existing_file.read_text(encoding="utf-8") == "existing file"
 
 
 def test_path_collision_failure(tmp_path, capsys):
@@ -243,7 +259,43 @@ def test_path_collision_failure(tmp_path, capsys):
     assert test_input_file_path.read_text(encoding="utf-8") == "collision test"
 
 
-def test_symlink_path_collision_failure(tmp_path, capsys):
+def test_path_verification_failure(tmp_path, capsys, monkeypatch):
+    input_path = tmp_path / "input.csv"
+    output_dir = tmp_path / "output"
+
+    original_input = (
+        "transaction_id,date,description,amount,category\n"
+        "ABC-001,2026-08-27,Office supplies,12.50,expenses\n"
+    )
+    input_path.write_text(original_input, encoding="utf-8")
+
+    # This function deliberately fails whenever it is called.
+    def fail_resolution(path, strict=False):
+        raise OSError("Deliberate test failure")
+
+    # Temporarily replace resolve() while main() runs.
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "resolve", fail_resolution)
+
+        result = main([
+            str(input_path),
+            "--output-dir",
+            str(output_dir),
+        ])
+
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert captured.out == ""
+    assert captured.err == (
+        "Could not verify input/output dir paths: "
+        "Deliberate test failure\n"
+    )
+    assert not output_dir.exists()
+    assert input_path.read_text(encoding="utf-8") == original_input
+
+
+def test_symlink_in_output_dir_failure(tmp_path, capsys):
     input_path = tmp_path / "input.csv"
     output_dir = tmp_path / "output"
     clean_output_path = output_dir / "clean_transactions.csv"
@@ -268,8 +320,8 @@ def test_symlink_path_collision_failure(tmp_path, capsys):
 
     captured = capsys.readouterr()
 
-    assert "Input and output path collide:" in captured.err
-    assert "input.csv" in captured.err
+    assert "Existing file in output dir is unsupported symlink:" in captured.err
+    assert str(clean_output_path) in captured.err
     assert captured.out == ""
 
     assert input_path.read_text(encoding="utf-8") == original_input
