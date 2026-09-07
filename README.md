@@ -98,7 +98,7 @@ A completely empty file is invalid. A header-only file is valid and produces two
 | `amount` | Positive ASCII digits with an optional decimal point and one or two fractional digits, such as `12`, `12.3` or `12.34`. | Exact integer pence in `amount_pence`. |
 | `category` | Non-empty after trimming and whitespace normalisation. | Internal whitespace runs become one ordinary space and letters become lowercase. |
 
-Leading zeroes are accepted: `001.20` becomes `120` pence. Zero, negative values, signs, currency symbols, comma grouping, exponent notation, `NaN`, `Infinity`, trailing decimal points and more than two fractional digits are rejected.
+Leading zeroes are accepted: `001.20` becomes `120` pence. Zero, negative values, signs, currency symbols, comma grouping, exponent notation, `NaN`, `Infinity`, trailing decimal points and more than two fractional digits are rejected. Extremely long amounts are subject to the conversion and serialization limitation described under [Limitations](#limitations).
 
 ## Row rejection and duplicate handling
 
@@ -198,12 +198,14 @@ source_row_number,transaction_id,date,description,amount,category,rejection_reas
 | Status | Meaning |
 | ---: | --- |
 | `0` | The file was processed successfully. Individual rejected rows may still be present. |
-| `1` | The input could not be read, decoded or mapped safely; an input/output collision was detected; or an output could not be written. |
+| `1` | The input could not be read, decoded or mapped safely; a symlink was rejected; input/output path verification failed or detected a collision; or an output could not be written. |
 | `2` | Command-line arguments were missing or invalid; `argparse` prints the usage error. |
 
 Successful summaries are printed to standard output. Expected usage, input and output failures are printed to standard error.
 
-The program validates the complete file before writing reports. An unusable input therefore does not create or modify the three target output files. It also refuses to run when the resolved input path is one of its intended output paths, including when an output filename is a symbolic link to the input.
+The program validates the complete file before writing reports. A decoding or CSV-structure failure therefore does not create or modify the three target output files.
+
+Before processing, the command rejects a symbolic link at the supplied input filename, the supplied output-directory entry or any of the three intended output filenames, even when there is no input/output collision. These checks apply to the named entries; symlinks in parent directories are not blanket-rejected. The command also rejects collisions between the resolved input path and the resolved intended output paths. Expected failures while verifying these paths are reported to standard error with status `1`, before reports are written.
 
 ## Repeatability and file safety
 
@@ -256,6 +258,8 @@ Version 1.0.0 deliberately supports a narrow contract:
 - no fuzzy correction, category remapping, arbitrary-column pass-through or interactive repair;
 - no Excel, JSON, database, API, graphical interface, scheduling or hosted service support;
 - no streaming or guarantee for files too large to fit comfortably in memory.
+
+Extremely long amounts that satisfy the field grammar, or totals derived from them, can exceed Python's decimal integer/string conversion limits. They can raise uncaught errors during amount conversion or report serialization. A serialization failure can leave partially written outputs, including an incomplete summary. Unrestricted end-to-end amount-length support is therefore not guaranteed. This is an accepted v1 limitation with remediation deferred; no new supported numeric cap is defined.
 
 The three output files are not replaced as one atomic transaction. If an unexpected write failure occurs after one output has been written, previously written sibling outputs are not rolled back. Input/output identity protection covers resolved paths and symbolic links; hard-link aliases are outside the v1 contract.
 
